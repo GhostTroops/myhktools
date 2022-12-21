@@ -1,0 +1,441 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+<title>Javascript Compressor</title>
+<meta http-equiv="Content-Type" content="text/html; charset=GB2312" />
+<script type="text/javascript">
+
+function ICommon(that)
+{
+  if(null != that)
+  {
+  	 // 继承，表示that要从Common继承出来
+     that.inherit = Common.prototype.inherit;
+     that.specialize = Common.prototype.specialize
+  }
+  return that
+};
+
+// 静态方法
+ICommon.specialize = function(p, c)
+{
+	p || (p = {});
+	c || (c = p.constructor);
+	if(c == {}.constructor) c = new Function("this.inherit()");
+	c.valueOf = new Function("return this");
+	c.valueOf.prototype = new this.valueOf;
+	c.valueOf.prototype.specialize(p);
+	c.prototype = new c.valueOf;
+	c.valueOf.prototype.constructor = c.prototype.constructor = c;
+	// c的祖先就是ICommon
+	c.ancestor = this;
+	// c.specialize = ICommon.specialize
+	c.specialize = arguments.callee;
+	c.ancestorOf = this.ancestorOf;
+	return c
+};
+
+ICommon.valueOf = new Function("return this");
+
+ICommon.valueOf.prototype = 
+{
+	// 定义constructor为ICommon，也就是new ICommon.valueOf()的时候等于new ICommon
+	constructor:ICommon,
+	// 继承: 调用，调用函数inherit的函数对象的祖先方法
+	// 这里是给specialize处理后的方法进行调用而使用的
+	inherit:function()
+	{
+	   return arguments.callee.caller.ancestor.apply(this, arguments)
+	},
+	// 返回从thant继承到ICommon.valueOf的对象
+	specialize:function(that)
+	{
+	   if(this == this.constructor.prototype && this.constructor.specialize)
+	   {
+	      return this.constructor.valueOf.prototype.specialize(that)
+	   }
+	   
+	   for(var i in that)
+	   {
+	   	   // constructor、toString、valueOf不克隆
+	       switch(i)
+	       {
+	        case"constructor":case"toString":case"valueOf":continue
+	       }
+	       // 方法覆盖前，保留到这个同名方法对象祖先里，这是是个聪明的做法
+	       if(typeof that[i] == "function" && that[i] != this[i])
+	       {
+	          that[i].ancestor = this[i]
+	       }
+	       this[i] = that[i]
+	   }
+	   // 如果that和this的toString不相同，并且不是Object的toString，就采用前面的方式保留原有的引用
+	   // 然后再进行继承
+	   if(that.toString != this.toString && that.toString != {}.toString)
+	   {
+	     that.toString.ancestor = this.toString;
+	     this.toString = that.toString
+	   }
+	   return this
+	}
+};
+
+
+function Common(){};
+
+this.Common = ICommon.specialize(
+{
+	constructor:Common,
+	toString:function()
+	{
+	   return"[common "+(this.constructor.className||"Object")+"]"
+	},
+	// 判断klass和他的祖先链中的对象，是否等于当前对象的constructor
+	// 也就是判断是否是同类型
+	instanceOf:function(klass)
+	{
+	   return this.constructor == klass || klass.ancestorOf(this.constructor)
+	}
+});
+
+// 定义静态属性
+Common.className = "Common";         // 和java类似的className
+Common.ancestor  = null;             // 另Common的祖先类为空
+// 判断klass的祖先链中是否有等于当前类--继承于Common类的
+Common.ancestorOf = function(klass)
+{
+   while(klass && klass.ancestor != this) klass = klass.ancestor;
+   return Boolean(klass)
+};
+// 令Common.valueOf的祖先类为ICommon
+Common.valueOf.ancestor = ICommon;
+
+function ParseMaster()
+{
+var E=0,R=1,L=2;
+var G=/\(/g,S=/\$\d/,I=/^\$\d+$/,T=/(['"])\1\+(.*)\+\1\1$/,ES=/\\./g,Q=/'/,DE=/\x01[^\x01]*\x01/g;
+var self=this;
+this.add=function(e,r){
+   if(!r)r="";
+   var l=(_14(String(e)).match(G)||"").length+1;
+   if(S.test(r)){
+    if(I.test(r)){
+     r=parseInt(r.slice(1))-1
+    }else{
+     var i=l;
+     var q=Q.test(_14(r))?'"':"'";
+     while(i) r=r.split("$"+i--).join(q+"+a[o+"+i+"]+"+q);
+     r=new Function("a,o","return"+q+r.replace(T,"$1")+q)
+    }
+   }
+   _33(e||"/^$/",r,l)
+};
+this.exec=function(s){
+   _3.length=0;
+   return _30(_5(s,this.escapeChar).replace(new RegExp(_1,this.ignoreCase?"gi":"g"),_31),this.escapeChar).replace(DE,"")
+};
+this.reset=function(){
+   _1.length=0};
+   var _3=[];
+   var _1=[];
+   var _32=function(){ return"("+String(this[E]).slice(1,-1)+")" };
+_1.toString=function(){return this.join("|")};
+function _33(){
+   arguments.toString=_32;
+   _1[_1.length]=arguments
+}
+function _31(){
+   if(!arguments[0]) return"";
+   var i=1,j=0,p;
+   while(p=_1[j++]){
+    if(arguments[i]){
+     var r=p[R];
+     switch(typeof r){
+      case"function":return r(arguments,i);
+      case"number":return arguments[r+i]
+     }
+     var d=(arguments[i].indexOf(self.escapeChar)==-1)?"":"\x01"+arguments[i]+"\x01";
+     return d+r
+    }else i+=p[L]
+   }
+};
+function _5(s,e){return e?s.replace(new RegExp("\\"+e+"(.)","g"),function(m,c){ _3[_3.length]=c; return e }):s};
+function _30(s,e){var i=0;return e?s.replace(new RegExp("\\"+e,"g"),function(){ return e+(_3[i++]||"")}):s };
+function _14(s){return s.replace(ES,"")}
+};
+
+
+ParseMaster.prototype={ constructor:ParseMaster,ignoreCase:false,escapeChar:"" };
+if(/MSIE 5.0/.test(navigator.userAgent)) new function(){
+   var ap=function(f,o,a){f.apply(o,a)};
+   if(''.replace(/^/,String)){
+    var _28=String.prototype.replace;
+    var _29=function(e,r){
+     var m,n="",s=this;
+     while(s&&(m=e.exec(s))){
+      n+=s.slice(0,m.index)+ap(r,this,m);
+      s=s.slice(m.lastIndex)
+     }
+     return n+s
+    };
+    String.prototype.replace=function(e,r){
+     this.replace=(typeof r=="function")?_29:_28;
+     return this.replace(e,r)
+    }
+   }
+   if(!Function.apply){
+    var APPLY="apply-"+Number(new Date);
+    ap=function(f,o,a){
+     var r;
+     o[APPLY]=f;
+     switch(a.length){
+      case 0:r=o[APPLY]();break;
+      case 1:r=o[APPLY](a[0]);break;
+      case 2:r=o[APPLY](a[0],a[1]);break;
+      case 3:r=o[APPLY](a[0],a[1],a[2]);break;
+      case 4:r=o[APPLY](a[0],a[1],a[2],a[3]);break;
+      default:var aa=[],i=a.length-1;do aa[i]="a["+i+"]";while(i--);eval("r=o[APPLY]("+aa+")")
+     }
+     delete o[APPLY];
+     return r
+    };
+    if(typeof ICommon=="function") ICommon.valueOf.prototype.inherit=function(){
+     return ap(arguments.callee.caller.ancestor,this,arguments)
+    }
+   }
+   if(![].push) Array.prototype.push=function(){
+    for(var i=0;i<arguments.length;i++){
+     this[this.length]=arguments[i]
+    }
+    return this.length
+   };
+   if(![].pop) Array.prototype.pop=function(){
+    var i=this[this.length-1];
+    this.length--;
+    return i
+   }
+};
+function pack(_7,_0,_2,_8){
+   var I="$1";_7+="\n";
+   _0=Math.min(parseInt(_0),95);
+   function _15(s){
+    var i,p;
+    for(i=0;(p=_6[i]);i++){s=p(s)}
+    return s
+   };
+   var _25=function(p,a,c,k,e,d){
+   while(c--) if(k[c]) p=p.replace(new RegExp('\\b'+e(c)+'\\b','g'),k[c]);
+   return p
+};
+var _26=function(){
+   if(!''.replace(/^/,String)){
+    while(c--)d[e(c)]=k[c]||e(c);
+    k=[function(e){return d[e]}];
+    e=function(){return'\\w+'};
+    c=1
+   }
+};
+var _6=[];
+function _4(p){
+   _6[_6.length]=p
+};
+function _18(s){
+   var p=new ParseMaster;
+   p.escapeChar="\\";
+   p.add(/'[^'\n\r]*'/,I);
+   p.add(/"[^"\n\r]*"/,I);
+   p.add(/\/\/[^\n\r]*[\n\r]/," ");
+   p.add(/\/\*[^*]*\*+([^\/][^*]*\*+)*\//," ");
+   p.add(/\s+(\/[^\/\n\r\*][^\/\n\r]*\/g?i?)/,"$2");
+   p.add(/[^\w\x24\/'"*)\?:]\/[^\/\n\r\*][^\/\n\r]*\/g?i?/,I);
+   if(_8)p.add(/;;;[^\n\r]+[\n\r]/);
+   p.add(/\(;;\)/,I);
+   p.add(/;+\s*([};])/,"$2");
+   s=p.exec(s);
+   p.add(/(\b|\x24)\s+(\b|\x24)/,"$2 $3");
+   p.add(/([+\-])\s+([+\-])/,"$2 $3");
+   p.add(/\s+/,"");
+   return p.exec(s)
+};
+function _17(s){
+   var p=new ParseMaster;
+   p.add(/((\x24+)([a-zA-Z_]+))(\d*)/,function(m,o){
+    var l=m[o+2].length;
+    var s=l-Math.max(l-m[o+3].length,0);
+    return m[o+1].substr(s,l)+m[o+4]
+   });
+   var r=/\b_[A-Za-z\d]\w*/;
+   var k=_13(s,_9(r),_21);
+   var e=k.e;
+   p.add(r,function(m,o){return e[m[o]]});
+   return p.exec(s)
+};
+function _16(s){
+   if(_0>62)s=_20(s);
+   var p=new ParseMaster;
+   var e=_12(_0);
+   var r=(_0>62)?/\w\w+/ :/\w+/;
+   k=_13(s,_9(r),e);
+   var e=k.e;
+   p.add(r,function(m,o){return e[m[o]]});
+   return s&&_27(p.exec(s),k)
+};
+function _13(s,r,e){
+   var a=s.match(r);
+   var so=[];
+   var en={};
+   var pr={};
+   if(a){
+    var u=[];
+    var p={};
+    var v={};
+    var c={};
+    var i=a.length,j=0,w;
+    do{
+     w="$"+a[--i];
+     if(!c[w]){
+      c[w]=0;
+      u[j]=w;
+      p["$"+(v[j]=e(j))]=j++
+     }
+     c[w]++
+    }
+    while(i);
+    i=u.length;
+    do{
+     w=u[--i];
+     if(p[w]!=null){
+      so[p[w]]=w.slice(1);
+      pr[p[w]]=true;
+      c[w]=0
+     }
+    }
+    while(i);
+    u.sort(function(m1,m2){return c[m2]-c[m1]});
+    j=0;
+    do{
+     if(so[i]==null) so[i]=u[j++].slice(1);
+     en[so[i]]=v[i]
+    }
+    while(++i<u.length)
+   }
+   return{s:so,e:en,p:pr}
+};
+function _27(p,k){
+   var E=_10("e\\(c\\)","g");
+   p="'"+_5(p)+"'";
+   var a=Math.min(k.s.length,_0)||1;
+   var c=k.s.length;
+   for(var i in k.p) k.s[i]="";
+   k="'"+k.s.join("|")+"'.split('|')";
+   var e=_0>62?_11:_12(a);
+   e=String(e).replace(/_0/g,"a").replace(/arguments\.callee/g,"e");
+   var i="c"+(a>10?".toString(a)":"");
+   if(_2){
+    var d=_19(_26);
+    if(_0>62)d=d.replace(/\\\\w/g,"[\\xa1-\\xff]");
+    else if(a<36)d=d.replace(E,i);
+    if(!c)d=d.replace(_10("(c)\\s*=\\s*1"),"$1=0")
+   }
+   var u=String(_25);
+   if(_2){ u=u.replace(/\{/,"{"+d+";") }
+   u=u.replace(/"/g,"'");
+   if(_0>62){ u=u.replace(/'\\\\b'\s*\+|\+\s*'\\\\b'/g,"") }
+   if(a>36||_0>62||_2){ u=u.replace(/\{/,"{e="+e+";") }else{ u=u.replace(E,i) }
+   u=pack(u,0,false,true);
+   var p=[p,a,c,k];
+   if(_2){ p=p.concat(0,"{}") }
+   return"eval("+u+"("+p+"))\n"
+};
+function _12(a){return a>10?a>36?a>62?_11:_22:_23:_24};
+var _24=function(c){ return c };
+var _23=function(c){ return c.toString(36) };
+var _22=function(c){ return(c<_0?'':arguments.callee(parseInt(c/_0)))+((c=c%_0)>35?String.fromCharCode(c+29):c.toString(36)) };
+var _11=function(c){ return(c<_0?'':arguments.callee(c/_0))+String.fromCharCode(c%_0+161) };
+var _21=function(c){ return"_"+c };
+function _5(s){ return s.replace(/([\\'])/g,"\\$1") };
+function _20(s){ return s.replace(/[\xa1-\xff]/g,function(m){ return"\\x"+m.charCodeAt(0).toString(16) }) };
+function _10(s,f){ return new RegExp(s.replace(/\$/g,"\\$"),f) };
+function _19(f){ with(String(f))return slice(indexOf("{")+1,lastIndexOf("}")) };
+function _9(r){ return new RegExp(String(r).slice(1,-1),"g") };
+_4(_18);
+if(_8)_4(_17);
+if(_0)_4(_16);
+return _15(_7)
+};
+
+
+var input,output;
+onload=function(){
+if(!document.getElementById||''.replace(/^/,String))return;
+input=document.getElementById("input");//内容 文本区域
+var message=document.getElementById("message");//消息 
+var encoding=document.getElementById("ascii-encoding");//编码方式 选择列表 值有0、10、62、95
+var fastDecode=document.getElementById("fast-decode");//快速解码 选择框
+var specialChars=document.getElementById("special-chars");//特殊字符 选择框
+function packScript(){//执行压缩
+   try{
+    if(input.value){
+     input.value=pack(input.value,encoding.value,fastDecode.checked,specialChars.checked);
+        //调用编码函数    输入代码，   编码方式，       是否快速解码，        是否特殊字符
+    }
+   }catch(e){
+    reportError("error packing script",e.message)
+   }
+};
+function decodeScript(){//执行解码
+   try{
+    if(input.value.substring(0,27)=="eval(function(p,a,c,k,e,d){"){
+     eval("input.value=String"+input.value.slice(4));
+    }
+    else reportError("代码解码取消","您的代码没有用此方法压缩！");
+   }catch(e){
+    reportError("代码解码错误",e.message)
+   }
+};
+function enableFastDecode(){
+   fastDecode.disabled=Boolean(encoding.value==0);
+   fastDecode.parentNode.className=(encoding.value==0)?"disabled":""
+};
+function reportError(m,e){
+   message.innerHTML=m+(e?": "+e:"");
+   message.className="error"
+};
+encoding.onclick=enableFastDecode;
+var buttons=document.getElementsByTagName("button");
+var button,i;
+for(i=0;(button=buttons[i]);i++){
+   var handler=eval(button.id);
+   button.onclick=handler;
+   handler.button=button
+}
+};
+</script>
+</head>
+
+<body >
+<form id="packer" action="" method="post">
+     <label for="input">Paste your code:</label>
+   <br />
+    <textarea id="input" name="input" rows="10" cols="79"></textarea>
+<div class="r ar">
+    <p id="controls">
+     <label for="ascii-encoding">Encoding:</label>
+     <select id="ascii-encoding" name="ascii_encoding">
+   <option value="0">None</option>
+   <option value="10">Numeric</option>
+   <option value="62" selected="selected">Normal</option>
+   <option value="95">High ASCII</option>
+     </select><br />
+     <label for="fast-decode">Fast Decode:
+   <input type="checkbox" id="fast-decode" name="fast_decode" value="1" checked="checked"/></label><br />
+     <label for="special-chars">Special Characters:
+   <input type="checkbox" id="special-chars" name="special_chars" value="1"/></label>
+</p>
+    </div> 
+<button type="button" id="packScript">Compress</button>
+<button type="button" id="decodeScript" >Decode</button>
+<p id="message"></p>
+</form>
+</body>
+</html>

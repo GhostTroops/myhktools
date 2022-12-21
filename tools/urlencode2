@@ -1,0 +1,16 @@
+#!/usr/bin/env node
+// encodeURIComponent  encodeURI
+// ln -s `pwd`/tools/urlencode2 /usr/local/bin/urlencode2
+var self = process.stdin,data = [];
+self.on('readable', function() {
+    var chunk = this.read();
+    if (chunk != null)
+    {
+        data.push(chunk);
+    }
+});
+self.on('end', function() {
+    console.log(encodeURIComponent(data.join("").trim()));
+});
+if(process.argv && 2 < process.argv.length)
+    console.log(encodeURIComponent(process.argv.splice(2)[0]))

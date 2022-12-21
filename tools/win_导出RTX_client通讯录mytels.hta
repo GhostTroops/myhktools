@@ -1,0 +1,163 @@
+<body>
+    <script language="javascript">
+    var objApi = new ActiveXObject("RTXClient.RTXAPI");
+    var objKernal = objApi.GetObject("KernalRoot");
+    var objBuddyManager = objKernal.RTXBuddyManager;
+
+    var objApp = objApi.GetObject("AppRoot");
+    var objHelper = objApp.GetAppObject("RTXHelper");
+    var MyBuddy = objKernal.RTXGroupManager;
+
+    var fso = new ActiveXObject("Scripting.FileSystemObject"),
+        thefile = fso.CreateTextFile("MyTels.txt", true);
+
+    function makefile(s) {
+        thefile.WriteLine(s + "\n");
+    }
+
+    var out = makefile;
+
+    var x = 1;
+
+    // 合并后的通讯录，避免重复
+    var g_aTxl = {};
+
+    // 错误消息
+    var g_aErr = [];
+
+    function myLog(s) {
+        g_aErr.push(s);
+    }
+
+    function fnGetOtherInfo(o) {
+        var a = [];
+        try {
+
+            for (var k in o) {
+                if (o[k] && -1 == "Account,Telephone,Mobile,Email".indexOf(k))
+                    a.push(k + ":" + o[k] + ";");
+            }
+        } catch (e) {}
+        return a.join("");
+    }
+
+    // 获取单个用户信息
+    function fnGetInfo(UserName) {
+
+        try {
+            var objBuddy = objBuddyManager.Buddy(UserName);
+
+            var s1 = "",
+                x = "AVSetInfo,Account,Base64Sign,Buddies,ConnectionInfo,CurrentServerTime,DataCount,ETrunk,Email,EnterpriseInfo,FileName,Gender,GlobalModuleData,Id,IsUseMultiFileServer,Language,License,LoginMode,MDSessionManager,MFCSupport,Mobile,Module,ModuleCollection,MyPresence,Name,NetProxy,NetProxyParam,OutSupServerInfo,Presence,RCAToken,RTXCEventCenter,RTXCExState,RTXCRoot,RTXExtBuddyManager,RTXExtGroupManager,RealName,ServerAddress,ServerIP,ServerInfo,SessionManager,Sign,TCP,Telephone,Token,Type,UIN,UserModuleData,UserRights".split(/[,]/);
+            for (var k in x) {
+                if (objBuddy[x[k]]) s1 += x[k] + " = " + objBuddy[x[k]] + ",";
+            }
+
+            g_aTxl[objBuddy.Account] = ["BEGIN:VCARD\nVERSION:3.0",
+                "FN:" + objBuddy.name + "_" + objBuddy.Account,
+                "N:;" + objBuddy.name + ";;;",
+                "TEL;TYPE=WORK:" + objBuddy.Telephone,
+                "EMAIL;type=INTERNET;type=WORK;type=pref:" + objBuddy.Email,
+                "TEL;TYPE=CELL:" + objBuddy.Mobile,
+                "ORG:" + String(objHelper.GetBuddyDept(UserName)).replace(/\\/gm, "_"),
+                "NOTE:" + fnGetOtherInfo(objBuddy) + s1,
+                "CATEGORIES:MTX\nEND:VCARD"
+            ];
+
+            // out(g_aTxl[objBuddy.name].join("\n"));
+        } catch (e) {
+            // alert("fnGetInfo: " + UserName + e)
+        }
+        x++;
+
+    }
+
+    function GetBuddyList(Dept_id, Root_node) {
+        try {
+            var MyRtxBuddy = { Groups: { count: 0 } },
+                j = 0,
+                szT;
+            try {
+                MyRtxBuddy = MyBuddy.Group(Dept_id);
+                j = MyRtxBuddy.Groups.count;
+            } catch (e) {
+                //myLog("GetBuddyList MyBuddy.Group: MyRtxBuddy.Groups.count = " + j + ";;" + Dept_id + e)
+            }
+            if (!j)
+                try {
+                    j = MyRtxBuddy.Groups.count;
+                } catch (e) {}
+
+            try {
+                if (j)
+                    for (var i = 0; i <= j; i++) {
+                        try {
+                            szT = MyRtxBuddy.Groups.Item(i).id;
+                        } catch (e) {}
+                        // Root_node.push( MyRtxBuddy.Groups.Item(i).Name);
+                        try { GetDeptUser(szT, Root_node); } catch (e) {
+                            // myLog("GetBuddyList for GetDeptUser: " + szT + e)
+                        }
+
+                        try { GetBuddyList(szT, Root_node); } catch (e) {
+                            // myLog("GetBuddyList for: " + szT + e)
+                        }
+                    }
+            } catch (e) {
+                // myLog("GetBuddyList for = " + Dept_id + ", i = " + i + ";j = " + j)
+            }
+        } catch (e) {
+            // myLog("GetBuddyList: " + Dept_id  + " = " + objBuddyManager.Buddy(Dept_id) + e)
+        }
+
+    }
+
+    function GetDeptUser(Dept_id, Child_Node) {
+        var MyRtxBuddy = MyBuddy.Group(Dept_id);
+        var i = 0,
+            szD = "",
+            szT;
+        for (var j = MyRtxBuddy.Buddies.count; i <= j; i++) {
+            try {
+                szT = MyRtxBuddy.Buddies.Item(i).Account;
+                try { fnGetInfo(szT); } catch (e) { myLog("fnGetInfo: " + e) }
+                try { szD || (szD = objHelper.GetBuddyDept(szT)); } catch (e) { myLog("GetDeptUser: " + e) }
+            } catch (e) {}
+        }
+        if (0 < i)
+            Child_Node.push([szD, " : ", i].join(""));
+    }
+    var g_data = [];
+    GetBuddyList(10000001, g_data);
+
+    var szAll = [];
+    for (var k in g_aTxl) {
+        szAll.push.apply(szAll, g_aTxl[k]);
+    }
+
+    out(szAll.join("\n"));
+
+
+    // document.write(g_data.join("<br>\n"))
+    document.title = x;
+
+    // alert(g_aErr.join("\n"));
+
+    function fnGetQYInfo() {
+        var objLicense = objApp.GetAppObject("License");
+
+        alert([enterprisename = "企业名称 : " + objLicense.enterprisename,
+            enterpriseshortname = "企业简称 : " + objLicense.enterpriseshortname,
+            enterpriseTrunkNum = "企业总机号: " + objLicense.EnterpriseTrunkNumber,
+        ].join("\n"))
+
+    }
+    // alert(x)
+    /*
+
+    var objHelper = objApp.GetAppObject("RTXHelper");
+    var mydept = objHelper.GetBuddyDept(UserName);
+    */
+    thefile.Close();
+    </script>
+</body>

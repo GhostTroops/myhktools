@@ -1,0 +1,17 @@
+curDir=`pwd`
+curIp="$1"
+curPort="$2"
+curU="$3"
+curP="$4"
+configNm="$curDir/mysqlCnf_$curIp.cnf"
+nowStr=`date '+%Y%m%d_%H%M%S'`
+
+cat <<EOT > $configNm
+[client]
+user=$curU
+password=$curP
+
+EOT
+
+mysqldump --defaults-file="$configNm"  --skip-lock-tables -A -Y -C --protocol=tcp --port=$2 --default-character-set=utf8  -h $1 --user=$curU> "dump_$curIP_$nowStr.sql"
+rm -rf $configNm

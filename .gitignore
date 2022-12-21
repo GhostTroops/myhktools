@@ -1,0 +1,6 @@
+# mac ds_ files
+*.DS_Store
+/jars
+*.jar*iii
+*.exe
+*.war*

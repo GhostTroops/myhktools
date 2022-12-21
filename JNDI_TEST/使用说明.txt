@@ -1,0 +1,17 @@
+执行命令如下：
+java -jar .\JNDI.jar -p 7101 -u 192.168.10.216 -j QIMS_TEST -d mysql
+执行完毕后，会在jar包所在目录生成“JNDITEST_时间戳.txt”里面记录有结果
+若存在漏洞，相关sql的结果会出现在txt文件中；若不存在，txt中应为报错信息，无sql结果
+
+
+1、切换到jar包所在路径
+
+2、执行命令：
+   java -jar JNDITEST.jar ip port jndi_name db_type
+   例如：
+   java -jar JNDITEST.jar 192.168.10.216 7101 ta39 oracle
+   java -jar JNDITEST.jar 192.168.10.216 7101 QIMS_TEST mysql
+
+3、执行完毕后，会在jar包所在目录生成“JNDITEST_时间戳.txt”
+
+4、若存在漏洞，相关sql的结果会出现在txt文件中；若不存在，txt中应为报错信息，无sql结果。
