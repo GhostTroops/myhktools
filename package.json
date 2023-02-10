@@ -43,7 +43,7 @@
     "serve-favicon": "^2.5.0",
     "socksv5": "0.0.6",
     "spdx-expression-parse": "^3.0.0",
-    "ssh2": "^0.6.1",
+    "ssh2": "^1.4.0",
     "stream": "0.0.2",
     "system": "^2.0.1",
     "tesseract.js": "^4.0.2",
